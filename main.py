@@ -23,6 +23,16 @@ def main():
             reply_markup=markup,
         )
 
+    # Хэндлер на команду /stop и на сообщение.
+    @bot.message_handler(commands=['stop'])
+    @bot.message_handler(func=lambda message: message.text == 'Выход')
+    def cmd_stop(message):
+        bot.send_message(
+            chat_id=message.chat.id,
+            text='Поки-чпоки...',
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
+
     bot.polling(non_stop=True, interval=0)
 
 
