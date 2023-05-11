@@ -18,7 +18,7 @@ def main():
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(kb1, kb2)
         bot.send_message(
-            chat_id=message.from_user.id,
+            chat_id=message.chat.id,
             text='Hello!',
             reply_markup=markup,
         )
