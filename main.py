@@ -3,6 +3,7 @@ from telebot import types
 import logging
 
 import config
+from captcha_gen import generate_captcha
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -36,9 +37,10 @@ def main():
     # Хэндлер на сообщение "Далее".
     @bot.message_handler(func=lambda message: message.text == 'Далее')
     def hand_next(message):
-        bot.send_message(
+        bot.send_photo(
             chat_id=message.chat.id,
-            text='CAPTCHA',
+            photo=(generate_captcha()),
+            caption='CAPTCHA',
         )
 
     bot.polling(non_stop=True, interval=0)
