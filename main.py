@@ -12,7 +12,7 @@ def main():
 
     # Хэндлер на команду /start.
     @bot.message_handler(commands=['start'])
-    def cmd_start(message):
+    def hand_start(message):
         kb1 = types.KeyboardButton('Далее')
         kb2 = types.KeyboardButton('Выход')
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -23,14 +23,22 @@ def main():
             reply_markup=markup,
         )
 
-    # Хэндлер на команду /stop и на сообщение.
+    # Хэндлер на команду /stop и на сообщение "Выход".
     @bot.message_handler(commands=['stop'])
     @bot.message_handler(func=lambda message: message.text == 'Выход')
-    def cmd_stop(message):
+    def hand_stop(message):
         bot.send_message(
             chat_id=message.chat.id,
             text='Поки-чпоки...',
             reply_markup=types.ReplyKeyboardRemove(),
+        )
+
+    # Хэндлер на сообщение "Далее".
+    @bot.message_handler(func=lambda message: message.text == 'Далее')
+    def hand_next(message):
+        bot.send_message(
+            chat_id=message.chat.id,
+            text='CAPTCHA',
         )
 
     bot.polling(non_stop=True, interval=0)
