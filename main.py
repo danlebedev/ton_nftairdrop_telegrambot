@@ -41,6 +41,7 @@ def main():
             chat_id=message.chat.id,
             photo=(generate_captcha()),
             caption='CAPTCHA',
+            reply_markup=types.ReplyKeyboardRemove(),
         )
         bot.register_next_step_handler_by_chat_id(
             chat_id=message.chat.id,
