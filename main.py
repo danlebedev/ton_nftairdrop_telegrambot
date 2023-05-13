@@ -3,7 +3,7 @@ from telebot import types
 import logging
 
 import config
-from captcha_gen import generate_captcha
+from captcha_gen import generate_captcha, captcha_text
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -42,6 +42,23 @@ def main():
             photo=(generate_captcha()),
             caption='CAPTCHA',
         )
+        bot.register_next_step_handler_by_chat_id(
+            chat_id=message.chat.id,
+            callback=check_captcha,
+        )
+
+    def check_captcha(message):
+        if message.text == captcha_text['text']:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text='Проходи кожанный мешок',
+            )
+        else:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text='Вали отсюда стиралка',
+            )
+
 
     bot.polling(non_stop=True, interval=0)
 
