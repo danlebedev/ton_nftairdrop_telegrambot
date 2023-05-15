@@ -21,9 +21,9 @@ def check_and_add_wallet(wallet: str) -> bool:
         WHERE wallet = ?
     """
     cursor.execute(_SQL, (wallet,))
-    flag = bool(cursor.fetchall())
+    flag = not bool(cursor.fetchall())
     
-    if not flag:
+    if flag:
         # Добавление кошелька в таблицу.
         _SQL = """INSERT INTO ton_wallets
             (wallet)
