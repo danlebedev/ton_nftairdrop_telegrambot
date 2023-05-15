@@ -11,3 +11,28 @@ def check_and_create_table():
     conn.commit()
     cursor.close()
     conn.close()
+
+def check_and_add_wallet(wallet: str) -> bool:
+    conn = sqlite3.connect('sqlite3.db')
+    cursor = conn.cursor()
+    # Проверка наличия кошелька в таблице.
+    _SQL = """SELECT wallet
+        FROM ton_wallets
+        WHERE wallet = ?
+    """
+    cursor.execute(_SQL, (wallet,))
+    flag = bool(cursor.fetchall())
+    
+    if not flag:
+        # Добавление кошелька в таблицу.
+        _SQL = """INSERT INTO ton_wallets
+            (wallet)
+            VALUES
+            (?)
+        """
+        cursor.execute(_SQL, (wallet,))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+    return flag
