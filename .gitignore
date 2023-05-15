@@ -4,3 +4,6 @@ venv
 # Python files and folders
 **/__pycache__/
 config.py
+
+# SQLite3
+*.db
