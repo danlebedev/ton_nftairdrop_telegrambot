@@ -4,6 +4,7 @@ import logging
 
 import config
 from captcha_gen import generate_captcha, captcha_text
+from database import check_and_add_wallet
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -52,12 +53,28 @@ def main():
         if message.text == captcha_text['text']:
             bot.send_message(
                 chat_id=message.chat.id,
-                text='Проходи кожанный мешок',
+                text='Введите свой TonCoin кошелек...',
+            )
+            bot.register_next_step_handler_by_chat_id(
+                chat_id=message.chat.id,
+                callback=add_wallet,
             )
         else:
             bot.send_message(
                 chat_id=message.chat.id,
                 text='Вали отсюда стиралка',
+            )
+
+    def add_wallet(message):
+        if check_and_add_wallet(message.text):
+            bot.send_message(
+                chat_id=message.chat.id,
+                text='Вы были добавлены в качесте участника',
+            )
+        else:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text='Данный кошелек уже зарегистрирован'
             )
 
 
