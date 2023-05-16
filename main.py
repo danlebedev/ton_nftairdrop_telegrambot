@@ -78,7 +78,7 @@ def main():
             )
 
 
-    bot.polling(non_stop=True, interval=0)
+    bot.infinity_polling()
 
 
 if __name__ == '__main__':
