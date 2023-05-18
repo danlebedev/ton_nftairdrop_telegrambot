@@ -3,7 +3,7 @@ from telebot import types
 import logging
 
 import config
-from captcha_gen import generate_captcha, captcha_text
+from captcha_gen import generate_captcha, check_captcha
 from database import check_wallet_in_database, add_wallet_in_database
 
 def main():
@@ -46,11 +46,11 @@ def main():
         )
         bot.register_next_step_handler_by_chat_id(
             chat_id=message.chat.id,
-            callback=check_captcha,
+            callback=captcha,
         )
 
-    def check_captcha(message):
-        if message.text == captcha_text['text']:
+    def captcha(message):
+        if check_captcha(message.text):
             bot.send_message(
                 chat_id=message.chat.id,
                 text='Введите свой TonCoin кошелек...',
