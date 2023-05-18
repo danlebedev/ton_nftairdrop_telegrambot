@@ -5,6 +5,7 @@ import logging
 import config
 from captcha_gen import generate_captcha, check_captcha
 from database import check_wallet_in_database, add_wallet_in_database
+from crypto import Account
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -66,16 +67,23 @@ def main():
             )
 
     def add_wallet(message):
-        if not check_wallet_in_database(message.text):
-            add_wallet_in_database(message.text)
-            bot.send_message(
-                chat_id=message.chat.id,
-                text='Вы были добавлены в качесте участника',
-            )
+        acc = Account(message.text)
+        if acc.check_wallet_in_blockchain():
+            if not check_wallet_in_database(message.text):
+                add_wallet_in_database(message.text)
+                bot.send_message(
+                    chat_id=message.chat.id,
+                    text='Вы были добавлены в качесте участника',
+                )
+            else:
+                bot.send_message(
+                    chat_id=message.chat.id,
+                    text='Данный кошелек уже зарегистрирован'
+                )
         else:
             bot.send_message(
                 chat_id=message.chat.id,
-                text='Данный кошелек уже зарегистрирован'
+                text=acc.get_error()
             )
 
 
