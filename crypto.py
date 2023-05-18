@@ -26,6 +26,6 @@ class Account:
     def get_error(self) -> str:
         match self.req.status_code:
             case 400:
-                return 'Вы ввели не существующий адрес'
+                return 'Вы ввели несуществующий адрес'
             case _:
                 return 'Что-то пошло не так...'
