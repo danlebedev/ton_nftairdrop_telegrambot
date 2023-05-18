@@ -7,24 +7,25 @@ class Account:
         self.req = requests.get(url)
         self.resp_dict = self.req.json()
 
-    def check_wallet(self):
+    def check_wallet_in_blockchain(self) -> bool:
         """Проверка на существование кошелька."""
         match self.req.status_code:
             case 200:
-                return self.get_nano_balance()
-            case 400:
-                return self.get_error()
+                return True
             case _:
-                return None
+                return False
 
-    def get_balance(self):
+    def get_balance(self) -> int:
         """Возвращает значение баланса."""
         return self.resp_dict['balance']
 
-    def get_nano_balance(self):
+    def get_nano_balance(self) -> float:
         """Возвращает значение баланса с плавающей точкой."""
         return self.resp_dict['balance'] / 1_000_000_000
     
-    def get_error(self):
-        return 'Вы ввели не существующий адрес'
-        
+    def get_error(self) -> str:
+        match self.req.status_code:
+            case 400:
+                return 'Вы ввели не существующий адрес'
+            case _:
+                return 'Что-то пошло не так...'
