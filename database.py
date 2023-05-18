@@ -12,7 +12,7 @@ def check_and_create_table():
     cursor.close()
     conn.close()
 
-def check_and_add_wallet(wallet: str) -> bool:
+def check_wallet_in_database(wallet: str) -> bool:
     conn = sqlite3.connect('sqlite3.db')
     cursor = conn.cursor()
     # Проверка наличия кошелька в таблице.
@@ -21,18 +21,21 @@ def check_and_add_wallet(wallet: str) -> bool:
         WHERE wallet = ?
     """
     cursor.execute(_SQL, (wallet,))
-    flag = not bool(cursor.fetchall())
-    
-    if flag:
-        # Добавление кошелька в таблицу.
-        _SQL = """INSERT INTO ton_wallets
-            (wallet)
-            VALUES
-            (?)
-        """
-        cursor.execute(_SQL, (wallet,))
-        conn.commit()
-
+    flag = bool(cursor.fetchall())
     cursor.close()
     conn.close()
     return flag
+
+def add_wallet_in_database(wallet: str):
+    conn = sqlite3.connect('sqlite3.db')
+    cursor = conn.cursor()
+    # Добавление кошелька в таблицу.
+    _SQL = """INSERT INTO ton_wallets
+        (wallet)
+        VALUES
+        (?)
+    """
+    cursor.execute(_SQL, (wallet,))
+    conn.commit()
+    cursor.close()
+    conn.close()
