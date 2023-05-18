@@ -4,7 +4,7 @@ import logging
 
 import config
 from captcha_gen import generate_captcha, captcha_text
-from database import check_and_add_wallet
+from database import check_wallet_in_database, add_wallet_in_database
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -66,7 +66,8 @@ def main():
             )
 
     def add_wallet(message):
-        if check_and_add_wallet(message.text):
+        if not check_wallet_in_database(message.text):
+            add_wallet_in_database(message.text)
             bot.send_message(
                 chat_id=message.chat.id,
                 text='Вы были добавлены в качесте участника',
