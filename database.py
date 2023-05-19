@@ -5,6 +5,7 @@ class DB:
         self.conn = sqlite3.connect('sqlite3.db')
         self.cursor = self.conn.cursor()
         self.wallet = wallet
+        self.check_and_create_table()
 
     def check_and_create_table(self):
         _SQL = """CREATE TABLE IF NOT EXISTS ton_wallets(
