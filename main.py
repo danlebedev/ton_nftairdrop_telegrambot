@@ -1,6 +1,7 @@
 import telebot
 from telebot import types
 import logging
+import json
 
 import config
 from captcha_gen import generate_captcha, check_captcha
@@ -12,6 +13,9 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     # Объект бота
     bot = telebot.TeleBot(config.token)
+    # Загрузка всех текстов ответов бота.
+    with open('texts.json') as f:
+        data = json.load(f)
 
     # Хэндлер на команду /start.
     @bot.message_handler(commands=['start'])
@@ -22,7 +26,7 @@ def main():
         markup.add(kb1, kb2)
         bot.send_message(
             chat_id=message.chat.id,
-            text='Hello!',
+            text=data['hand_start'],
             reply_markup=markup,
         )
 
@@ -32,7 +36,7 @@ def main():
     def hand_stop(message):
         bot.send_message(
             chat_id=message.chat.id,
-            text='Поки-чпоки...',
+            text=data['hand_stop'],
             reply_markup=types.ReplyKeyboardRemove(),
         )
 
@@ -42,7 +46,7 @@ def main():
         bot.send_photo(
             chat_id=message.chat.id,
             photo=(generate_captcha()),
-            caption='CAPTCHA',
+            caption=data['hand_next'],
             reply_markup=types.ReplyKeyboardRemove(),
         )
         bot.register_next_step_handler_by_chat_id(
@@ -54,7 +58,7 @@ def main():
         if check_captcha(message.text):
             bot.send_message(
                 chat_id=message.chat.id,
-                text='Введите свой TonCoin кошелек...',
+                text=data['captcha_if'],
             )
             bot.register_next_step_handler_by_chat_id(
                 chat_id=message.chat.id,
@@ -63,7 +67,7 @@ def main():
         else:
             bot.send_message(
                 chat_id=message.chat.id,
-                text='Вали отсюда стиралка',
+                text=data['captcha_else'],
             )
 
     def add_wallet(message):
@@ -75,12 +79,12 @@ def main():
                     db.add_wallet_in_database()
                     bot.send_message(
                         chat_id=message.chat.id,
-                        text='Вы были добавлены в качестве участника',
+                        text=data['add_wallet_if_if'],
                     )
                 else:
                     bot.send_message(
                         chat_id=message.chat.id,
-                        text='Данный кошелек уже зарегистрирован'
+                        text=data['add_wallet_if_else'],
                     )
             else:
                 bot.send_message(
