@@ -1,18 +1,28 @@
 from captcha.image import ImageCaptcha
 from random import choice
 
-# Словарь для хранения текста капчи.
-captcha_text = {'text': ''}
-def generate():
-    image = ImageCaptcha(width=250, height=100, font_sizes=(60, 64, 68))
-    symbols = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
-    captcha_text['text'] = ''.join([choice(symbols) for _ in range(6)])
 
-    # Генерация картинки капчи.
-    return image.generate(captcha_text['text'])
+class Captcha:
+    def __init__(self):
+        self.image = ImageCaptcha(width=250, height=100, font_sizes=(60, 64, 68))
+        self.symbols = [
+            '0', '1', '2', '3', '4',
+            '5', '6', '7', '8', '9',
+        ]
+    
+    def generate(self):
+        self.text = ''.join([choice(self.symbols) for _ in range(6)])
+        self.captcha = self.image.generate(self.text)
 
-def check(message: str) -> bool:
-    if message == captcha_text['text']:
-        return True
-    else:
-        return False
+    def get_text(self):
+        return self.text
+    
+    def get_captcha(self):
+        return self.captcha
+    
+    def check(self, message):
+        if message == self.text:
+            return True
+        else:
+            return False
+        

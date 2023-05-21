@@ -4,7 +4,7 @@ import logging
 import json
 
 import config
-import image_captcha as cap
+from image_captcha import Captcha
 from database import DB
 from crypto import Account
 from keyboard import KB
@@ -19,6 +19,7 @@ def main():
         data = json.load(f)
     # Создаем инлайл клавиатуру.
     kb = KB()
+    cap = Captcha()
 
     # Хэндлер на команду /start.
     @bot.message_handler(commands=['start'])
@@ -60,10 +61,11 @@ def main():
             message_id=call.message.message_id,
             reply_markup=None,
         )
+        cap.generate()
         kb.change_button_data(0, 'Обновить', 'refresh')
         bot.send_photo(
             chat_id=call.message.chat.id,
-            photo=cap.generate(),
+            photo=cap.get_captcha(),
             caption=data['next'],
             reply_markup=kb.get_markup(),
         )
@@ -76,8 +78,9 @@ def main():
         )
 
     def refresh_captcha(call):
+        cap.generate()
         bot.edit_message_media(
-            media=types.InputMediaPhoto(cap.generate(), caption=data['next']),
+            media=types.InputMediaPhoto(cap.get_captcha(), caption=data['next']),
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             reply_markup=kb.get_markup(),
@@ -97,9 +100,19 @@ def main():
                 callback=add_wallet,
             )
         else:
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=message.message_id - 1,
+            )
+            kb.change_button_data(0, 'Пробовать снова')
             bot.send_message(
                 chat_id=message.chat.id,
                 text=data['captcha_else'],
+                reply_markup=kb.get_markup(),
             )
 
     def add_wallet(message):
