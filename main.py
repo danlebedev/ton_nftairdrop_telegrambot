@@ -4,9 +4,10 @@ import logging
 import json
 
 import config
-from captcha_gen import generate_captcha, check_captcha
+import image_captcha as cap
 from database import DB
 from crypto import Account
+from keyboard import KB
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -16,46 +17,77 @@ def main():
     # Загрузка всех текстов ответов бота.
     with open('texts.json') as f:
         data = json.load(f)
+    # Создаем инлайл клавиатуру.
+    kb = KB()
 
     # Хэндлер на команду /start.
     @bot.message_handler(commands=['start'])
     def hand_start(message):
-        kb1 = types.KeyboardButton('Далее')
-        kb2 = types.KeyboardButton('Выход')
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add(kb1, kb2)
+        kb.set_default()
         bot.send_message(
             chat_id=message.chat.id,
             text=data['hand_start'],
-            reply_markup=markup,
+            reply_markup=kb.get_markup(),
         )
 
-    # Хэндлер на команду /stop и на сообщение "Выход".
-    @bot.message_handler(commands=['stop'])
-    @bot.message_handler(func=lambda message: message.text == 'Выход')
-    def hand_stop(message):
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=data['hand_stop'],
-            reply_markup=types.ReplyKeyboardRemove(),
-        )
+    # Хэндлер для отлавливания всех callback.
+    @bot.callback_query_handler(func=lambda call: True)
+    def hand_call(call):
+        if call.data == 'stop':
+            bot.edit_message_reply_markup(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=None,
+            )
+            bot.clear_step_handler_by_chat_id(
+                chat_id=call.message.chat.id
+            )
+            bot.send_message(
+                chat_id=call.message.chat.id,
+                text=data['stop'],
+            )
+            bot.answer_callback_query(
+                callback_query_id=call.id,
+            )
+        elif call.data == 'next':
+            print_captcha(call)
+        elif call.data == 'refresh':
+            refresh_captcha(call)
 
-    # Хэндлер на сообщение "Далее".
-    @bot.message_handler(func=lambda message: message.text == 'Далее')
-    def hand_next(message):
+    def print_captcha(call):
+        bot.edit_message_reply_markup(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=None,
+        )
+        kb.change_button_data(0, 'Обновить', 'refresh')
         bot.send_photo(
-            chat_id=message.chat.id,
-            photo=(generate_captcha()),
-            caption=data['hand_next'],
-            reply_markup=types.ReplyKeyboardRemove(),
+            chat_id=call.message.chat.id,
+            photo=cap.generate(),
+            caption=data['next'],
+            reply_markup=kb.get_markup(),
+        )
+        bot.answer_callback_query(
+            callback_query_id=call.id,
         )
         bot.register_next_step_handler_by_chat_id(
-            chat_id=message.chat.id,
-            callback=captcha,
+            chat_id=call.message.chat.id,
+            callback=check_captcha,
         )
 
-    def captcha(message):
-        if check_captcha(message.text):
+    def refresh_captcha(call):
+        bot.edit_message_media(
+            media=types.InputMediaPhoto(cap.generate(), caption=data['next']),
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=kb.get_markup(),
+        )
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+        )
+
+    def check_captcha(message):
+        if cap.check(message.text):
             bot.send_message(
                 chat_id=message.chat.id,
                 text=data['captcha_if'],
