@@ -1,5 +1,6 @@
 from captcha.image import ImageCaptcha
 from random import choice
+from copy import copy
 
 
 class Captcha:
@@ -13,12 +14,16 @@ class Captcha:
     def generate(self):
         self.text = ''.join([choice(self.symbols) for _ in range(6)])
         self.captcha = self.image.generate(self.text)
+        self.captcha_copy = copy(self.captcha)
 
     def get_text(self):
         return self.text
     
     def get_captcha(self):
         return self.captcha
+    
+    def get_captcha_copy(self):
+        return self.captcha_copy
     
     def check(self, message):
         if message == self.text:

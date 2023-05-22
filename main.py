@@ -63,7 +63,7 @@ def main():
         )
         cap.generate()
         kb.change_button_data(0, 'Обновить', 'refresh')
-        bot.send_photo(
+        bot_message = bot.send_photo(
             chat_id=call.message.chat.id,
             photo=cap.get_captcha(),
             caption=data['next'],
@@ -75,11 +75,15 @@ def main():
         bot.register_next_step_handler_by_chat_id(
             chat_id=call.message.chat.id,
             callback=check_captcha,
+            bot_message=bot_message,
         )
 
     def refresh_captcha(call):
+        bot.clear_step_handler_by_chat_id(
+            chat_id=call.message.chat.id,
+        )
         cap.generate()
-        bot.edit_message_media(
+        bot_message = bot.edit_message_media(
             media=types.InputMediaPhoto(cap.get_captcha(), caption=data['next']),
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -88,9 +92,23 @@ def main():
         bot.answer_callback_query(
             callback_query_id=call.id,
         )
+        bot.register_next_step_handler_by_chat_id(
+            chat_id=call.message.chat.id,
+            callback=check_captcha,
+            bot_message=bot_message,
+        )
 
-    def check_captcha(message):
+    def check_captcha(message, **kwargs):
+        bot_message = kwargs['bot_message']
         if cap.check(message.text):
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+            bot.delete_message(
+                chat_id=bot_message.chat.id,
+                message_id=bot_message.message_id,
+            )
             bot.send_message(
                 chat_id=message.chat.id,
                 text=data['captcha_if'],
@@ -104,16 +122,18 @@ def main():
                 chat_id=message.chat.id,
                 message_id=message.message_id,
             )
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id - 1,
-            )
-            kb.change_button_data(0, 'Пробовать снова')
-            bot.send_message(
-                chat_id=message.chat.id,
-                text=data['captcha_else'],
+            kb.change_button_data(0, 'Пробовать еще')
+            bot.edit_message_media(
+                media=types.InputMediaPhoto(
+                    media=cap.get_captcha_copy(),
+                    caption=data['captcha_else'],
+                    has_spoiler=True,
+                ),
+                chat_id=bot_message.chat.id,
+                message_id=bot_message.message_id,
                 reply_markup=kb.get_markup(),
             )
+            kb.change_button_data(0, 'Обновить')
 
     def add_wallet(message):
         acc = Account(message.text)
