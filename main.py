@@ -19,7 +19,10 @@ def main():
         data = json.load(f)
     # Создаем инлайл клавиатуру.
     kb = KB()
+    # Объект капчи.
     cap = Captcha()
+    # Словарь для хранения сообщения бота.
+    bot_message = {'message': None}
 
     # Хэндлер на команду /start.
     @bot.message_handler(commands=['start'])
@@ -65,6 +68,11 @@ def main():
             print_captcha(call)
         elif call.data == 'refresh':
             refresh_captcha(call)
+        elif call.data == 'wallet':
+            bot.register_next_step_handler_by_chat_id(
+                chat_id=call.message.chat_id,
+                callback=add_wallet,
+            )
 
     def print_captcha(call):
         bot.edit_message_reply_markup(
@@ -74,7 +82,8 @@ def main():
         )
         cap.generate()
         kb.change_button_data(0, 'Обновить', 'refresh')
-        bot_message = bot.send_photo(
+        # Присваивание нового объекта Message.
+        bot_message['message'] = bot.send_photo(
             chat_id=call.message.chat.id,
             photo=cap.get_captcha(),
             caption=data['next'],
@@ -86,7 +95,6 @@ def main():
         bot.register_next_step_handler_by_chat_id(
             chat_id=call.message.chat.id,
             callback=check_captcha,
-            bot_message=bot_message,
         )
 
     def refresh_captcha(call):
@@ -94,7 +102,8 @@ def main():
             chat_id=call.message.chat.id,
         )
         cap.generate()
-        bot_message = bot.edit_message_media(
+        # Присваивание нового объекта Message.
+        bot_message['message'] = bot.edit_message_media(
             media=types.InputMediaPhoto(cap.get_captcha(), caption=data['next']),
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -106,23 +115,21 @@ def main():
         bot.register_next_step_handler_by_chat_id(
             chat_id=call.message.chat.id,
             callback=check_captcha,
-            bot_message=bot_message,
         )
 
-    def check_captcha(message, **kwargs):
-        bot_message = kwargs['bot_message']
+    def check_captcha(message):
         if cap.check(message.text):
             bot.delete_message(
                 chat_id=message.chat.id,
                 message_id=message.message_id,
             )
             bot.delete_message(
-                chat_id=bot_message.chat.id,
-                message_id=bot_message.message_id,
+                chat_id=bot_message['message'].chat.id,
+                message_id=bot_message['message'].message_id,
             )
             kb.delete_button(0)
             # Присваивание нового объекта Message.
-            bot_message = bot.send_message(
+            bot_message['message'] = bot.send_message(
                 chat_id=message.chat.id,
                 text=data['captcha_if'],
                 reply_markup=kb.get_markup(),
@@ -130,13 +137,8 @@ def main():
             bot.register_next_step_handler_by_chat_id(
                 chat_id=message.chat.id,
                 callback=add_wallet,
-                bot_message=bot_message,
             )
         else:
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-            )
             kb.change_button_data(0, 'Пробовать еще')
             bot.edit_message_media(
                 media=types.InputMediaPhoto(
@@ -144,14 +146,13 @@ def main():
                     caption=data['captcha_else'],
                     has_spoiler=True,
                 ),
-                chat_id=bot_message.chat.id,
-                message_id=bot_message.message_id,
+                chat_id=bot_message['message'].chat.id,
+                message_id=bot_message['message'].message_id,
                 reply_markup=kb.get_markup(),
             )
             kb.change_button_data(0, 'Обновить')
 
-    def add_wallet(message, **kwargs):
-        bot_message = kwargs['bot_message']
+    def add_wallet(message):
         acc = Account(message.text)
         db = DB(message.text)
         try:
@@ -159,27 +160,29 @@ def main():
                 chat_id=message.chat.id,
                 message_id=message.message_id,
             )
-            kb.add_button(0, 'Ввести заново', 'again')
+            kb.add_button(0, 'Ввести заново', 'wallet')
             if acc.check_wallet_in_blockchain():
                 if not db.check_wallet_in_database():
                     db.add_wallet_in_database()
                     bot.edit_message_text(
                         text=data['add_wallet_if_if'],
-                        chat_id=bot_message.chat.id,
-                        message_id=bot_message.message_id,
+                        chat_id=bot_message['message'].chat.id,
+                        message_id=bot_message['message'].message_id,
                     )
                 else:
-                    bot.edit_message_text(
+                    # Присваивание нового объекта Message.
+                    bot_message['message'] = bot.edit_message_text(
                         text=data['add_wallet_if_else'],
-                        chat_id=bot_message.chat.id,
-                        message_id=bot_message.message_id,
+                        chat_id=bot_message['message'].chat.id,
+                        message_id=bot_message['message'].message_id,
                         reply_markup=kb.get_markup(),
                     )
             else:
-                bot.edit_message_text(
+                # Присваивание нового объекта Message.
+                bot_message['message'] = bot.edit_message_text(
                     text=acc.get_error(),
-                    chat_id=bot_message.chat.id,
-                    message_id=bot_message.message_id,
+                    chat_id=bot_message['message'].chat.id,
+                    message_id=bot_message['message'].message_id,
                     reply_markup=kb.get_markup(),
                 )
         finally:
