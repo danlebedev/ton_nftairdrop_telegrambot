@@ -53,6 +53,3 @@ class KB:
             },
         ]
         self.create_buttons()
-
-kb = KB()
-print(kb.get_markup())
