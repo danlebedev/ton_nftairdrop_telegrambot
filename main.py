@@ -109,13 +109,17 @@ def main():
                 chat_id=bot_message.chat.id,
                 message_id=bot_message.message_id,
             )
-            bot.send_message(
+            kb.delete_button(0)
+            # Присваивание нового объекта Message.
+            bot_message = bot.send_message(
                 chat_id=message.chat.id,
                 text=data['captcha_if'],
+                reply_markup=kb.get_markup(),
             )
             bot.register_next_step_handler_by_chat_id(
                 chat_id=message.chat.id,
                 callback=add_wallet,
+                bot_message=bot_message,
             )
         else:
             bot.delete_message(
@@ -135,26 +139,37 @@ def main():
             )
             kb.change_button_data(0, 'Обновить')
 
-    def add_wallet(message):
+    def add_wallet(message, **kwargs):
+        bot_message = kwargs['bot_message']
         acc = Account(message.text)
         db = DB(message.text)
         try:
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+            kb.add_button(0, 'Ввести заново', 'again')
             if acc.check_wallet_in_blockchain():
                 if not db.check_wallet_in_database():
                     db.add_wallet_in_database()
-                    bot.send_message(
-                        chat_id=message.chat.id,
+                    bot.edit_message_text(
                         text=data['add_wallet_if_if'],
+                        chat_id=bot_message.chat.id,
+                        message_id=bot_message.message_id,
                     )
                 else:
-                    bot.send_message(
-                        chat_id=message.chat.id,
+                    bot.edit_message_text(
                         text=data['add_wallet_if_else'],
+                        chat_id=bot_message.chat.id,
+                        message_id=bot_message.message_id,
+                        reply_markup=kb.get_markup(),
                     )
             else:
-                bot.send_message(
-                    chat_id=message.chat.id,
-                    text=acc.get_error()
+                bot.edit_message_text(
+                    text=acc.get_error(),
+                    chat_id=bot_message.chat.id,
+                    message_id=bot_message.message_id,
+                    reply_markup=kb.get_markup(),
                 )
         finally:
             db.close()
