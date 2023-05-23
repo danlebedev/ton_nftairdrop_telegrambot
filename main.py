@@ -31,6 +31,17 @@ def main():
             reply_markup=kb.get_markup(),
         )
 
+    # Хэндлер на удаление всех сообщений юзера.
+    @bot.message_handler(func=lambda message: True)
+    def delete_all_user_messages(message):
+        try:
+            bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+        except:
+            pass
+
     # Хэндлер для отлавливания всех callback.
     @bot.callback_query_handler(func=lambda call: True)
     def hand_call(call):
