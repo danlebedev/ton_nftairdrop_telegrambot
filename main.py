@@ -68,11 +68,6 @@ def main():
             print_captcha(call)
         elif call.data == 'refresh':
             refresh_captcha(call)
-        elif call.data == 'wallet':
-            bot.register_next_step_handler_by_chat_id(
-                chat_id=call.message.chat_id,
-                callback=add_wallet,
-            )
 
     def print_captcha(call):
         bot.edit_message_reply_markup(
@@ -118,26 +113,10 @@ def main():
         )
 
     def check_captcha(message):
+        delete_all_user_messages(message)
         if cap.check(message.text):
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-            )
-            bot.delete_message(
-                chat_id=bot_message['message'].chat.id,
-                message_id=bot_message['message'].message_id,
-            )
             kb.delete_button(0)
-            # Присваивание нового объекта Message.
-            bot_message['message'] = bot.send_message(
-                chat_id=message.chat.id,
-                text=data['captcha_if'],
-                reply_markup=kb.get_markup(),
-            )
-            bot.register_next_step_handler_by_chat_id(
-                chat_id=message.chat.id,
-                callback=add_wallet,
-            )
+            pass_captcha(message, data['captcha_if'])
         else:
             kb.change_button_data(0, 'Пробовать еще')
             bot.edit_message_media(
@@ -152,15 +131,38 @@ def main():
             )
             kb.change_button_data(0, 'Обновить')
 
+    def pass_captcha(message, text):
+        if bot_message['message'].content_type != 'text':
+            bot.delete_message(
+                    chat_id=bot_message['message'].chat.id,
+                    message_id=bot_message['message'].message_id,
+                )
+            # Присваивание нового объекта Message.
+            bot_message['message'] = bot.send_message(
+                chat_id=message.chat.id,
+                text=text,
+                reply_markup=kb.get_markup(),
+            )
+        else:
+            try:
+                bot.edit_message_text(
+                    text=text,
+                    chat_id=bot_message['message'].chat.id,
+                    message_id=bot_message['message'].message_id,
+                    reply_markup=kb.get_markup(),
+                )
+            except:
+                pass
+        bot.register_next_step_handler_by_chat_id(
+            chat_id=message.chat.id,
+            callback=add_wallet,
+        )
+
     def add_wallet(message):
         acc = Account(message.text)
         db = DB(message.text)
         try:
-            bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-            )
-            kb.add_button(0, 'Ввести заново', 'wallet')
+            delete_all_user_messages(message)
             if acc.check_wallet_in_blockchain():
                 if not db.check_wallet_in_database():
                     db.add_wallet_in_database()
@@ -170,21 +172,9 @@ def main():
                         message_id=bot_message['message'].message_id,
                     )
                 else:
-                    # Присваивание нового объекта Message.
-                    bot_message['message'] = bot.edit_message_text(
-                        text=data['add_wallet_if_else'],
-                        chat_id=bot_message['message'].chat.id,
-                        message_id=bot_message['message'].message_id,
-                        reply_markup=kb.get_markup(),
-                    )
+                    pass_captcha(message, f"{data['add_wallet_if_else']}\n{data['re_wallet']}",)
             else:
-                # Присваивание нового объекта Message.
-                bot_message['message'] = bot.edit_message_text(
-                    text=acc.get_error(),
-                    chat_id=bot_message['message'].chat.id,
-                    message_id=bot_message['message'].message_id,
-                    reply_markup=kb.get_markup(),
-                )
+                pass_captcha(message, f"{acc.get_error()}\n{data['re_wallet']}",)
         finally:
             db.close()
 
