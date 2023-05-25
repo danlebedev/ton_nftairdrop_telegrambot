@@ -165,7 +165,7 @@ def main():
 
     def add_wallet(message):
         acc = Account(message.text)
-        db = DB(message.text)
+        db = DB(message.text, message.from_user.id)
         try:
             delete_all_user_messages(message)
             if acc.check_wallet_in_blockchain():
