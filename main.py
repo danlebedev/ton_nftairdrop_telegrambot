@@ -8,6 +8,9 @@ from image_captcha import Captcha
 from database import DB
 from crypto import Account
 from keyboard import KB
+import telebot.storage.base_storage as strg
+
+strg.StateStorageBase
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -17,25 +20,27 @@ def main():
     # Загрузка всех текстов ответов бота.
     with open('texts.json') as f:
         data = json.load(f)
-    # Создаем инлайл клавиатуру.
-    kb = KB()
-    # Объект капчи.
-    cap = Captcha()
-    # Словарь для хранения сообщения бота.
-    bot_message = {'message': None}
+    # Хранилище объекта инлайн клавиатуры.
+    kb = {}
+    # Хранилище объекта капчи.
+    cap = {}
+    # Храненилище объекта сообщения бота.
+    bot_message = {}
 
     # Хэндлер на команду /start.
-    @bot.message_handler(commands=['start'])
+    @bot.message_handler(commands=['start'], chat_types=['private'])
     def hand_start(message):
-        kb.set_default()
+        kb[message.chat.id] = KB()
+        cap[message.chat.id] = Captcha()
+        kb[message.chat.id].set_default()
         bot.send_message(
             chat_id=message.chat.id,
             text=data['hand_start'],
-            reply_markup=kb.get_markup(),
+            reply_markup=kb[message.chat.id].get_markup(),
         )
 
     # Хэндлер на удаление всех сообщений юзера.
-    @bot.message_handler(func=lambda message: True)
+    @bot.message_handler(func=lambda message: True, chat_types=['private'])
     def delete_all_user_messages(message):
         try:
             bot.delete_message(
@@ -75,14 +80,14 @@ def main():
             message_id=call.message.message_id,
             reply_markup=None,
         )
-        cap.generate()
-        kb.change_button_data(0, 'Обновить', 'refresh')
+        cap[call.message.chat.id].generate()
+        kb[call.message.chat.id].change_button_data(0, 'Обновить', 'refresh')
         # Присваивание нового объекта Message.
-        bot_message['message'] = bot.send_photo(
+        bot_message[call.message.chat.id] = bot.send_photo(
             chat_id=call.message.chat.id,
-            photo=cap.get_captcha(),
+            photo=cap[call.message.chat.id].get_captcha(),
             caption=data['next'],
-            reply_markup=kb.get_markup(),
+            reply_markup=kb[call.message.chat.id].get_markup(),
         )
         bot.answer_callback_query(
             callback_query_id=call.id,
@@ -96,13 +101,13 @@ def main():
         bot.clear_step_handler_by_chat_id(
             chat_id=call.message.chat.id,
         )
-        cap.generate()
+        cap[call.message.chat.id].generate()
         # Присваивание нового объекта Message.
-        bot_message['message'] = bot.edit_message_media(
-            media=types.InputMediaPhoto(cap.get_captcha(), caption=data['next']),
+        bot_message[call.message.chat.id] = bot.edit_message_media(
+            media=types.InputMediaPhoto(cap[call.message.chat.id].get_captcha(), caption=data['next']),
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            reply_markup=kb.get_markup(),
+            reply_markup=kb[call.message.chat.id].get_markup(),
         )
         bot.answer_callback_query(
             callback_query_id=call.id,
@@ -114,42 +119,42 @@ def main():
 
     def check_captcha(message):
         delete_all_user_messages(message)
-        if cap.check(message.text):
-            kb.delete_button(0)
+        if cap[message.chat.id].check(message.text):
+            kb[message.chat.id].delete_button(0)
             pass_captcha(message, data['captcha_if'])
         else:
-            kb.change_button_data(0, 'Пробовать еще')
+            kb[message.chat.id].change_button_data(0, 'Пробовать еще')
             bot.edit_message_media(
                 media=types.InputMediaPhoto(
-                    media=cap.get_captcha_copy(),
+                    media=cap[message.chat.id].get_captcha_copy(),
                     caption=data['captcha_else'],
                     has_spoiler=True,
                 ),
-                chat_id=bot_message['message'].chat.id,
-                message_id=bot_message['message'].message_id,
-                reply_markup=kb.get_markup(),
+                chat_id=bot_message[message.chat.id].chat.id,
+                message_id=bot_message[message.chat.id].message_id,
+                reply_markup=kb[message.chat.id].get_markup(),
             )
-            kb.change_button_data(0, 'Обновить')
+            kb[message.chat.id].change_button_data(0, 'Обновить')
 
     def pass_captcha(message, text):
-        if bot_message['message'].content_type != 'text':
+        if bot_message[message.chat.id].content_type != 'text':
             bot.delete_message(
-                    chat_id=bot_message['message'].chat.id,
-                    message_id=bot_message['message'].message_id,
+                    chat_id=bot_message[message.chat.id].chat.id,
+                    message_id=bot_message[message.chat.id].message_id,
                 )
             # Присваивание нового объекта Message.
-            bot_message['message'] = bot.send_message(
+            bot_message[message.chat.id] = bot.send_message(
                 chat_id=message.chat.id,
                 text=text,
-                reply_markup=kb.get_markup(),
+                reply_markup=kb[message.chat.id].get_markup(),
             )
         else:
             try:
                 bot.edit_message_text(
                     text=text,
-                    chat_id=bot_message['message'].chat.id,
-                    message_id=bot_message['message'].message_id,
-                    reply_markup=kb.get_markup(),
+                    chat_id=bot_message[message.chat.id].chat.id,
+                    message_id=bot_message[message.chat.id].message_id,
+                    reply_markup=kb[message.chat.id].get_markup(),
                 )
             except:
                 pass
@@ -168,8 +173,8 @@ def main():
                     db.add_wallet_in_database()
                     bot.edit_message_text(
                         text=data['add_wallet_if_if'],
-                        chat_id=bot_message['message'].chat.id,
-                        message_id=bot_message['message'].message_id,
+                        chat_id=bot_message[message.chat.id].chat.id,
+                        message_id=bot_message[message.chat.id].message_id,
                     )
                 else:
                     pass_captcha(message, f"{data['add_wallet_if_else']}\n{data['re_wallet']}",)
