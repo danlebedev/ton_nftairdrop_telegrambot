@@ -14,9 +14,14 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     # Объект бота
     bot = telebot.TeleBot(token=token)
-    # Установка кнопок меню.
+
     with open('config/settings.json', 'r') as f:
         settings = json.load(f)
+    # Описание что может делать бот.
+    bot.set_my_description(
+        description=settings['description'],
+    )
+    # Установка кнопок меню.
     bot.set_my_commands(
         commands=[
             types.BotCommand(command=k, description=v)

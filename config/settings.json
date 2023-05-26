@@ -1,4 +1,5 @@
 {
+    "description": "Это бот для проведения aidrop TON NFT",
     "commands": {
         "start": "Запуск и перезапуск бота"
     }
