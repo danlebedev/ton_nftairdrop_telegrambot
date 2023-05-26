@@ -17,6 +17,8 @@ def main():
 
     with open('config/settings.json', 'r') as f:
         settings = json.load(f)
+    # Все тексты ответов бота.
+    data = settings['texts']
     # Описание что может делать бот.
     bot.set_my_description(
         description=settings['description'],
@@ -32,9 +34,6 @@ def main():
             for k, v in settings['commands'].items()
         ],
     )
-    # Загрузка всех текстов ответов бота.
-    with open('config/texts.json') as f:
-        data = json.load(f)
     # Хранилище объекта инлайн клавиатуры.
     kb = {}
     # Хранилище объекта капчи.
