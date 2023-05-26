@@ -21,7 +21,11 @@ def main():
     bot.set_my_description(
         description=settings['description'],
     )
-    # Установка кнопок меню.
+    # Информация о боте в профиле.
+    bot.set_my_short_description(
+        short_description=settings['short_description'],
+    )
+    # Установка команд меню.
     bot.set_my_commands(
         commands=[
             types.BotCommand(command=k, description=v)
