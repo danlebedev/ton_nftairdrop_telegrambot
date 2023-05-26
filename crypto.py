@@ -3,7 +3,7 @@ import requests
 class Account:
     def __init__(self, wallet: str):
         self.wallet = wallet
-        url = f'https://testnet.tonapi.io/v2/accounts/{self.wallet}'
+        url = f'https://tonapi.io/v2/accounts/{self.wallet}'
         self.req = requests.get(url)
         self.resp_dict = self.req.json()
 
