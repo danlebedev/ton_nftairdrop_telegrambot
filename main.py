@@ -8,9 +8,6 @@ from image_captcha import Captcha
 from database import DB
 from crypto import Account
 from keyboard import KB
-import telebot.storage.base_storage as strg
-
-strg.StateStorageBase
 
 def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
@@ -62,10 +59,7 @@ def main():
             bot.clear_step_handler_by_chat_id(
                 chat_id=call.message.chat.id
             )
-            bot.send_message(
-                chat_id=call.message.chat.id,
-                text=data['stop'],
-            )
+            stop(call.message)
             bot.answer_callback_query(
                 callback_query_id=call.id,
             )
@@ -73,6 +67,12 @@ def main():
             print_captcha(call)
         elif call.data == 'refresh':
             refresh_captcha(call)
+
+    def stop(message):
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=data['stop'],
+        )
 
     def print_captcha(call):
         bot.edit_message_reply_markup(
@@ -169,15 +169,25 @@ def main():
         try:
             delete_all_user_messages(message)
             if acc.check_wallet_in_blockchain():
-                if not db.check_wallet_in_database():
-                    db.add_wallet_in_database()
+                if db.check_user_in_database():
                     bot.edit_message_text(
                         text=data['add_wallet_if_if'],
+                        chat_id=message.chat.id,
+                        message_id=bot_message[message.chat.id].message_id,
+                        reply_markup=None,
+                    )
+                    hand_call('stop')
+                elif db.check_wallet_in_database():
+                    pass_captcha(message, f"{data['add_wallet_if_elif']}\n{data['re_wallet']}",)
+                else:
+                    db.add_wallet_in_database()
+                    bot.edit_message_text(
+                        text=data['add_wallet_if_else'],
                         chat_id=bot_message[message.chat.id].chat.id,
                         message_id=bot_message[message.chat.id].message_id,
+                        reply_markup=None,
                     )
-                else:
-                    pass_captcha(message, f"{data['add_wallet_if_else']}\n{data['re_wallet']}",)
+                    stop(message)
             else:
                 pass_captcha(message, f"{acc.get_error()}\n{data['re_wallet']}",)
         finally:
