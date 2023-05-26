@@ -3,7 +3,7 @@ from telebot import types
 import logging
 import json
 
-import config
+from config.token import token
 from image_captcha import Captcha
 from database import DB
 from crypto import Account
@@ -13,9 +13,18 @@ def main():
     # Включаем логирование, чтобы не пропустить важные сообщения.
     logging.basicConfig(level=logging.DEBUG)
     # Объект бота
-    bot = telebot.TeleBot(config.token)
+    bot = telebot.TeleBot(token=token)
+    # Установка кнопок меню.
+    with open('config/settings.json', 'r') as f:
+        settings = json.load(f)
+    bot.set_my_commands(
+        commands=[
+            types.BotCommand(command=k, description=v)
+            for k, v in settings['commands'].items()
+        ],
+    )
     # Загрузка всех текстов ответов бота.
-    with open('texts.json') as f:
+    with open('config/texts.json') as f:
         data = json.load(f)
     # Хранилище объекта инлайн клавиатуры.
     kb = {}

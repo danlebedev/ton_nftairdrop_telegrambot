@@ -3,7 +3,7 @@ venv
 
 # Python files and folders
 **/__pycache__/
-config.py
+token.py
 
 # SQLite3
 *.db
