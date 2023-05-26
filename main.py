@@ -30,7 +30,14 @@ def main():
         kb[message.chat.id] = KB()
         cap[message.chat.id] = Captcha()
         kb[message.chat.id].set_default()
-        bot.send_message(
+        try:
+            bot.edit_message_reply_markup(
+                chat_id=bot_message[message.chat.id].chat.id,
+                message_id=bot_message[message.chat.id].message_id,
+                reply_markup=None,
+            )
+        finally:
+            bot_message[message.chat.id] = bot.send_message(
             chat_id=message.chat.id,
             text=data['hand_start'],
             reply_markup=kb[message.chat.id].get_markup(),
@@ -69,7 +76,12 @@ def main():
             refresh_captcha(call)
 
     def stop(message):
-        bot.send_message(
+        try:
+            del kb[message.chat.id]
+            del cap[message.chat.id]
+            del bot_message[message.chat.id]
+        finally:
+            bot.send_message(
             chat_id=message.chat.id,
             text=data['stop'],
         )
@@ -118,23 +130,26 @@ def main():
         )
 
     def check_captcha(message):
-        delete_all_user_messages(message)
-        if cap[message.chat.id].check(message.text):
-            kb[message.chat.id].delete_button(0)
-            pass_captcha(message, data['captcha_if'])
+        if message.text == '/start':
+            hand_start(message)
         else:
-            kb[message.chat.id].change_button_data(0, 'Пробовать еще')
-            bot.edit_message_media(
-                media=types.InputMediaPhoto(
-                    media=cap[message.chat.id].get_captcha_copy(),
-                    caption=data['captcha_else'],
-                    has_spoiler=True,
-                ),
-                chat_id=bot_message[message.chat.id].chat.id,
-                message_id=bot_message[message.chat.id].message_id,
-                reply_markup=kb[message.chat.id].get_markup(),
-            )
-            kb[message.chat.id].change_button_data(0, 'Обновить')
+            delete_all_user_messages(message)
+            if cap[message.chat.id].check(message.text):
+                kb[message.chat.id].delete_button(0)
+                pass_captcha(message, data['captcha_if'])
+            else:
+                kb[message.chat.id].change_button_data(0, 'Пробовать еще')
+                bot.edit_message_media(
+                    media=types.InputMediaPhoto(
+                        media=cap[message.chat.id].get_captcha_copy(),
+                        caption=data['captcha_else'],
+                        has_spoiler=True,
+                    ),
+                    chat_id=bot_message[message.chat.id].chat.id,
+                    message_id=bot_message[message.chat.id].message_id,
+                    reply_markup=kb[message.chat.id].get_markup(),
+                )
+                kb[message.chat.id].change_button_data(0, 'Обновить')
 
     def pass_captcha(message, text):
         if bot_message[message.chat.id].content_type != 'text':
@@ -166,32 +181,35 @@ def main():
     def add_wallet(message):
         acc = Account(message.text)
         db = DB(message.text, message.from_user.id)
-        try:
-            delete_all_user_messages(message)
-            if acc.check_wallet_in_blockchain():
-                if db.check_user_in_database():
-                    bot.edit_message_text(
-                        text=data['add_wallet_if_if'],
-                        chat_id=message.chat.id,
-                        message_id=bot_message[message.chat.id].message_id,
-                        reply_markup=None,
-                    )
-                    hand_call('stop')
-                elif db.check_wallet_in_database():
-                    pass_captcha(message, f"{data['add_wallet_if_elif']}\n{data['re_wallet']}",)
+        if message.text == '/start':
+            hand_start(message)
+        else:
+            try:
+                delete_all_user_messages(message)
+                if acc.check_wallet_in_blockchain():
+                    if db.check_user_in_database():
+                        bot.edit_message_text(
+                            text=data['add_wallet_if_if'],
+                            chat_id=message.chat.id,
+                            message_id=bot_message[message.chat.id].message_id,
+                            reply_markup=None,
+                        )
+                        stop(message)
+                    elif db.check_wallet_in_database():
+                        pass_captcha(message, f"{data['add_wallet_if_elif']}\n{data['re_wallet']}",)
+                    else:
+                        db.add_wallet_in_database()
+                        bot.edit_message_text(
+                            text=data['add_wallet_if_else'],
+                            chat_id=bot_message[message.chat.id].chat.id,
+                            message_id=bot_message[message.chat.id].message_id,
+                            reply_markup=None,
+                        )
+                        stop(message)
                 else:
-                    db.add_wallet_in_database()
-                    bot.edit_message_text(
-                        text=data['add_wallet_if_else'],
-                        chat_id=bot_message[message.chat.id].chat.id,
-                        message_id=bot_message[message.chat.id].message_id,
-                        reply_markup=None,
-                    )
-                    stop(message)
-            else:
-                pass_captcha(message, f"{acc.get_error()}\n{data['re_wallet']}",)
-        finally:
-            db.close()
+                    pass_captcha(message, f"{acc.get_error()}\n{data['re_wallet']}",)
+            finally:
+                db.close()
 
 
     bot.infinity_polling()
