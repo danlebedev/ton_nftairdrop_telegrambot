@@ -3,7 +3,7 @@ from telebot import types
 import logging
 import json
 
-from config.token import token
+from config.token import token, password
 from image_captcha import Captcha
 from database import DB
 from crypto import Account
@@ -59,6 +59,38 @@ def main():
             text=data['hand_start'],
             reply_markup=kb[message.chat.id].get_markup(),
         )
+
+    # Хэндлер на команду /admin.
+    @bot.message_handler(commands=['admin'], chat_types=['private'])
+    def hand_admin(message):
+        kb[message.chat.id] = KB()
+        kb[message.chat.id].set_default()
+        kb[message.chat.id].delete_button(0)
+        bot_message[message.chat.id] = bot.send_message(
+            chat_id=message.chat.id,
+            text=data['pass_request'],
+            reply_markup=kb[message.chat.id].get_markup(),
+        )
+        bot.register_next_step_handler_by_chat_id(
+            chat_id=message.chat.id,
+            callback=pass_check,
+        )
+
+    def pass_check(message):
+        delete_all_user_messages(message)
+        bot.edit_message_reply_markup(
+                chat_id=bot_message[message.chat.id].chat.id,
+                message_id=bot_message[message.chat.id].message_id,
+                reply_markup=None,
+            )
+        if message.text == password:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text="ВСЕ ОК",
+                reply_markup=kb[message.chat.id].get_markup(),
+            )
+        else:
+            stop(message)
 
     # Хэндлер на удаление всех сообщений юзера.
     @bot.message_handler(func=lambda message: True, chat_types=['private'])
