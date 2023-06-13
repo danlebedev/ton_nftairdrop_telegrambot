@@ -1,12 +1,14 @@
 import sqlite3
 
 class DB:
-    def __init__(self, wallet: str, user_id: int):
+    def __init__(self):
         self.conn = sqlite3.connect('sqlite3.db')
         self.cursor = self.conn.cursor()
+        self.check_and_create_table()
+
+    def init_user_data(self, wallet: str, user_id: int):
         self.wallet = wallet
         self.user_id = user_id
-        self.check_and_create_table()
 
     def check_and_create_table(self):
         _SQL = """CREATE TABLE IF NOT EXISTS ton_wallets(
@@ -44,6 +46,14 @@ class DB:
         """
         self.cursor.execute(_SQL, (self.user_id, self.wallet,))
         self.conn.commit()
+
+    def get_wallets(self):
+        """Получение всех кошельков из базы."""
+        _SQL = """SELECT wallet
+            FROM ton_wallets
+        """
+        self.cursor.execute(_SQL)
+        return self.cursor.fetchall()
 
     def close(self):
         self.cursor.close()

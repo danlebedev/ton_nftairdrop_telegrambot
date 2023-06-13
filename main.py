@@ -84,13 +84,33 @@ def main():
                 reply_markup=None,
             )
         if message.text == password:
+            kb[message.chat.id].add_button(0, 'КОШЕЛЬКИ', 'get_wallets')
             bot.send_message(
                 chat_id=message.chat.id,
-                text="ВСЕ ОК",
+                text="АДМИНСКОЕ МЕНЮ",
                 reply_markup=kb[message.chat.id].get_markup(),
             )
         else:
             stop(message)
+
+    def get_wallets(call):
+        try:
+            db = DB()
+            tuple_list = db.get_wallets()
+            text = ''
+            for item in tuple_list:
+                for string in item:
+                    text += f'{string}\n'
+            bot.answer_callback_query(
+                callback_query_id=call.id,
+            )
+            print(text)
+            bot.send_message(
+                chat_id=call.message.chat.id,
+                text=text
+            )
+        finally:
+            db.close()
 
     # Хэндлер на удаление всех сообщений юзера.
     @bot.message_handler(func=lambda message: True, chat_types=['private'])
@@ -123,6 +143,9 @@ def main():
             print_captcha(call)
         elif call.data == 'refresh':
             refresh_captcha(call)
+        elif call.data == 'get_wallets':
+            get_wallets(call)
+
 
     def stop(message):
         try:
@@ -229,7 +252,8 @@ def main():
 
     def add_wallet(message):
         acc = Account(message.text)
-        db = DB(message.text, message.from_user.id)
+        db = DB()
+        db.init_user_data(message.text, message.from_user.id)
         if message.text == '/start':
             hand_start(message)
         else:
